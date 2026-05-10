@@ -1,0 +1,69 @@
+#!/bin/bash
+
+PLG_DIR="/boot/optional/plugins/syncthing"
+
+install() {
+  if [ -d "/boot/optional/uninstalled/syncthing/config" ] ; then
+    mkdir -p "$PLG_DIR/config"
+    cp -a /boot/optional/uninstalled/syncthing/config/. "$PLG_DIR/config/"
+    rm -rf /boot/optional/uninstalled/syncthing
+  fi
+}
+
+uninstall() {
+  if [ -f /var/run/mos-syncthing.pid ] ; then
+    PID=$(cat /var/run/mos-syncthing.pid 2>/dev/null)
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null ; then
+      kill "$PID" 2>/dev/null
+      sleep 1
+      kill -9 "$PID" 2>/dev/null
+    fi
+    rm -f /var/run/mos-syncthing.pid
+  fi
+
+  rm -f /usr/bin/syncthing
+
+  if [ -d "$PLG_DIR/config" ] ; then
+    mkdir -p /boot/optional/uninstalled/syncthing
+    cp -a "$PLG_DIR/config" /boot/optional/uninstalled/syncthing/config
+  fi
+}
+
+mos_start() {
+  PLG_DIR="/boot/optional/plugins/syncthing"
+
+  cp "$PLG_DIR/syncthing" /usr/bin/syncthing
+  chmod +x /usr/bin/syncthing
+}
+
+mos_start_after_services() {
+  PLG_SETTINGS=$(cat "$PLG_DIR/settings.json" 2>/dev/null)
+  AUTO_START=$(echo "$PLG_SETTINGS" | jq -r '.auto_start // false')
+
+  if [ "$AUTO_START" == "true" ] ; then
+    if [ -f /usr/bin/syncthing ] ; then
+      WEBUI_IP=$(echo "$PLG_SETTINGS" | jq -r '.webui_ip // "0.0.0.0"')
+      WEBUI_PORT=$(echo "$PLG_SETTINGS" | jq -r '.webui_port // "8384"')
+
+      mkdir -p "$PLG_DIR/config"
+      mkdir -p "$PLG_DIR/data"
+
+      nohup /usr/bin/syncthing serve \
+        --no-browser \
+        --no-upgrade \
+        --gui-address=${WEBUI_IP}:${WEBUI_PORT} \
+        --config="$PLG_DIR/config" \
+        --data="$PLG_DIR/data" > /dev/null 2>&1 &
+      PID=$!
+      echo $PID > "/var/run/mos-syncthing.pid"
+      sleep 1
+      if kill -0 $PID 2>/dev/null ; then
+        echo "Started Syncthing (PID: $PID)"
+      else
+        rm -f "/var/run/mos-syncthing.pid"
+        echo "Failed to start Syncthing"
+        return 1
+      fi
+    fi
+  fi
+}

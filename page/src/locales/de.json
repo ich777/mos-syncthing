@@ -1,0 +1,28 @@
+{
+  "plugin_syncthing": {
+    "title": "Syncthing",
+    "description": "Verwalten von Syncthing - kontinuierliche Dateisynchronisation",
+    "status": "Status",
+    "version": "Version:",
+    "latest_version": "Neueste Version:",
+    "running": "Läuft",
+    "not_running": "Nicht aktiv",
+    "not_installed": "nicht installiert",
+    "install": "Installieren",
+    "check_updates": "Prüfen",
+    "update": "Aktualisieren",
+    "settings": "Einstellungen",
+    "auto_start": "Syncthing automatisch beim Boot starten",
+    "webui_ip": "Web GUI IP",
+    "webui_port": "Web GUI Port",
+    "default_ip_hint": "Standard: 0.0.0.0 (alle Interfaces)",
+    "start": "Syncthing starten",
+    "stop": "Syncthing beenden",
+    "save": "Speichern",
+    "save_settings": "Einstellungen speichern",
+    "cancel": "Abbrechen",
+    "ok": "OK",
+    "open_webui": "Web GUI öffnen",
+    "default_port_hint": "Standard: {port}"
+  }
+}
