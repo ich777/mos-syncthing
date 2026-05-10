@@ -15,6 +15,7 @@ fi
 # Set Variables
 PLG_DIR="/boot/optional/plugins/syncthing"
 PID_FILE="/var/run/mos-syncthing.pid"
+LOG_FILE="/var/log/syncthing"
 
 # Function to get latest version from syncthing
 get_latest_version() {
@@ -63,7 +64,8 @@ case "$1" in
 
     VERSION=$(get_latest_version)
     URL="https://github.com/syncthing/syncthing/releases/download/${VERSION}/syncthing-linux-${ARCHITECTURE}-${VERSION}.tar.gz"
-    TAR_FILE="$PLG_DIR/syncthing.tar.gz"
+    TMP_DIR=$(mktemp -d)
+    TAR_FILE="$TMP_DIR/syncthing.tar.gz"
 
     echo "Downloading syncthing"
     echo "Architecture: $ARCHITECTURE"
@@ -71,14 +73,11 @@ case "$1" in
     if wget -q "$URL" -O "$TAR_FILE" ; then
       if [ -f "$TAR_FILE" ] && [ -s "$TAR_FILE" ] ; then
         echo "Extracting..."
-        TMP_DIR=$(mktemp -d)
         tar xzf "$TAR_FILE" -C "$TMP_DIR"
         cp "$TMP_DIR/syncthing-linux-${ARCHITECTURE}-${VERSION}/syncthing" "$PLG_DIR/syncthing"
         chmod +x "$PLG_DIR/syncthing"
         rm -rf "$TMP_DIR"
-        rm -f "$TAR_FILE"
 
-        # Copy to /usr/bin
         cp "$PLG_DIR/syncthing" /usr/bin/syncthing
         chmod +x /usr/bin/syncthing
 
@@ -87,12 +86,12 @@ case "$1" in
 
         echo "Installed $VERSION"
       else
-        rm -f "$TAR_FILE"
+        rm -rf "$TMP_DIR"
         echo "Downloaded file is empty"
         exit 1
       fi
     else
-      rm -f "$TAR_FILE"
+      rm -rf "$TMP_DIR"
       echo "Failed to download"
       exit 1
     fi
@@ -116,18 +115,17 @@ case "$1" in
     WEBUI_IP=$(jq -r '.webui_ip // "0.0.0.0"' "$PLG_DIR/settings.json" 2>/dev/null)
     WEBUI_PORT=$(jq -r '.webui_port // "8384"' "$PLG_DIR/settings.json" 2>/dev/null)
 
-    mkdir -p "$PLG_DIR/config"
-    mkdir -p "$PLG_DIR/data"
+    mkdir -p "$PLG_DIR/syncthing_config"
 
-    nohup /usr/bin/syncthing serve \
+    /usr/bin/syncthing serve \
       --no-browser \
       --no-upgrade \
       --gui-address=${WEBUI_IP}:${WEBUI_PORT} \
-      --config="$PLG_DIR/config" \
-      --data="$PLG_DIR/data" > /dev/null 2>&1 &
+      --home="$PLG_DIR/syncthing_config" \
+      --log-file="$LOG_FILE" > /dev/null 2>&1 &
     NEWPID=$!
     echo $NEWPID > "$PID_FILE"
-    sleep 1
+    sleep 2
     if kill -0 $NEWPID 2>/dev/null ; then
       echo "Started (PID: $NEWPID)"
     else
@@ -167,18 +165,17 @@ case "$1" in
       WEBUI_IP=$(jq -r '.webui_ip // "0.0.0.0"' "$PLG_DIR/settings.json" 2>/dev/null)
       WEBUI_PORT=$(jq -r '.webui_port // "8384"' "$PLG_DIR/settings.json" 2>/dev/null)
 
-      mkdir -p "$PLG_DIR/config"
-      mkdir -p "$PLG_DIR/data"
+      mkdir -p "$PLG_DIR/syncthing_config"
 
-      nohup /usr/bin/syncthing serve \
+      /usr/bin/syncthing serve \
         --no-browser \
         --no-upgrade \
         --gui-address=${WEBUI_IP}:${WEBUI_PORT} \
-        --config="$PLG_DIR/config" \
-        --data="$PLG_DIR/data" > /dev/null 2>&1 &
+        --home="$PLG_DIR/syncthing_config" \
+        --log-file="$LOG_FILE" > /dev/null 2>&1 &
       NEWPID=$!
       echo $NEWPID > "$PID_FILE"
-      sleep 1
+      sleep 2
       if kill -0 $NEWPID 2>/dev/null ; then
         echo "Restarted (PID: $NEWPID)"
       else

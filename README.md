@@ -35,7 +35,7 @@ installed through the MOS Hub.
 The contents of this repository (plugin code, build scripts, configuration,
 and automation) are licensed under **GPL-3.0**.
 
-`Syncthing` itself is licensed under its respective upstream license (MPL-2.0).
+`Syncthing` itself is licensed under its respective upstream license.
 
 ---
 

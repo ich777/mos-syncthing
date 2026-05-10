@@ -3,9 +3,9 @@
 PLG_DIR="/boot/optional/plugins/syncthing"
 
 install() {
-  if [ -d "/boot/optional/uninstalled/syncthing/config" ] ; then
-    mkdir -p "$PLG_DIR/config"
-    cp -a /boot/optional/uninstalled/syncthing/config/. "$PLG_DIR/config/"
+  if [ -d "/boot/optional/uninstalled/syncthing/syncthing_config" ] ; then
+    mkdir -p "$PLG_DIR"
+    cp -a /boot/optional/uninstalled/syncthing/syncthing_config "$PLG_DIR/syncthing_config"
     rm -rf /boot/optional/uninstalled/syncthing
   fi
 }
@@ -23,9 +23,9 @@ uninstall() {
 
   rm -f /usr/bin/syncthing
 
-  if [ -d "$PLG_DIR/config" ] ; then
+  if [ -d "$PLG_DIR/syncthing_config" ] ; then
     mkdir -p /boot/optional/uninstalled/syncthing
-    cp -a "$PLG_DIR/config" /boot/optional/uninstalled/syncthing/config
+    cp -a "$PLG_DIR/syncthing_config" /boot/optional/uninstalled/syncthing/syncthing_config
   fi
 }
 
@@ -45,18 +45,17 @@ mos_start_after_services() {
       WEBUI_IP=$(echo "$PLG_SETTINGS" | jq -r '.webui_ip // "0.0.0.0"')
       WEBUI_PORT=$(echo "$PLG_SETTINGS" | jq -r '.webui_port // "8384"')
 
-      mkdir -p "$PLG_DIR/config"
-      mkdir -p "$PLG_DIR/data"
+      mkdir -p "$PLG_DIR/syncthing_config"
 
-      nohup /usr/bin/syncthing serve \
+      /usr/bin/syncthing serve \
         --no-browser \
         --no-upgrade \
         --gui-address=${WEBUI_IP}:${WEBUI_PORT} \
-        --config="$PLG_DIR/config" \
-        --data="$PLG_DIR/data" > /dev/null 2>&1 &
+        --home="$PLG_DIR/syncthing_config" \
+        --log-file="/var/log/syncthing" > /dev/null 2>&1 &
       PID=$!
       echo $PID > "/var/run/mos-syncthing.pid"
-      sleep 1
+      sleep 2
       if kill -0 $PID 2>/dev/null ; then
         echo "Started Syncthing (PID: $PID)"
       else
